@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨ 霓虹边框凸显工具 - AI智能图片特效处理</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --neon-cyan: #00ffff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff88;
+            --bg-dark: #0a0e1a;
+            --bg-card: #141b2d;
+            --bg-chat: #0d1321;
+            --bg-sidebar: #111827;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --border: #1e293b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+            --gradient-card: linear-gradient(145deg, rgba(99,102,241,0.08) 0%, rgba(6,182,212,0.05) 100%);
+            --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
+            --shadow-neon: 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(99,102,241,0.08) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(6,182,212,0.06) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(139,92,246,0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .app-container { display: flex; height: 100vh; position: relative; z-index: 1; }
+        
+        .sidebar {
+            width: 260px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 18px 14px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            flex-shrink: 0;
+        }
+        .sidebar.minimized { width: 72px; }
+        .sidebar.minimized .nav-text,
+        .sidebar.minimized .logo-subtitle,
+        .sidebar.minimized .logo span,
+        .sidebar.minimized .footer-info { display: none; }
+        
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 22px;
+            padding: 16px 12px;
+            background: var(--gradient-card);
+            border-radius: 16px;
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        .sidebar-header::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.03), transparent);
+            animation: shimmer 6s infinite;
+        }
+        @keyframes shimmer { 0% { transform: translateX(-100%) rotate(45deg); } 100% { transform: translateX(100%) rotate(45deg); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        .logo i { -webkit-text-fill-color: initial; color: var(--accent); }
+        .logo-subtitle { font-size: 11px; color: var(--text-secondary); letter-spacing: 1px; }
+        
+        .sidebar-nav { flex: 1; overflow-y: auto; overflow-x: hidden; }
+        .sidebar-nav::-webkit-scrollbar { width: 4px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            margin-bottom: 4px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            color: var(--text-secondary);
+            border: 1px solid transparent;
+            position: relative;
+        }
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 50%;
+            transform: translateY(-50%);
+            width: 3px; height: 0;
+            background: var(--gradient-primary);
+            border-radius: 0 3px 3px 0;
+            transition: height 0.3s ease;
+        }
+        .nav-item:hover {
+            background: rgba(99, 102, 241, 0.08);
+            color: var(--text-primary);
+            border-color: rgba(99, 102, 241, 0.15);
+            transform: translateX(2px);
+        }
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.08));
+            color: var(--text-primary);
+            border-color: rgba(99, 102, 241, 0.25);
+        }
+        .nav-item.active::before { height: 55%; }
+        .nav-icon {
+            width: 22px; height: 22px;
+            margin-right: 12px;
+            font-size: 17px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .nav-text { font-size: 13px; font-weight: 500; white-space: nowrap; }
+        
+        .sidebar-footer {
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        .footer-info { padding: 8px; background: rgba(0,0,0,0.2); border-radius: 10px; margin-bottom: 8px; }
+        .footer-info p { margin: 3px 0; display: flex; align-items: center; gap: 6px; }
+        .footer-info i { color: var(--accent); width: 14px; }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
+        }
+        .topbar {
+            height: 64px;
+            background: rgba(20, 27, 45, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            flex-shrink: 0;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+        .toggle-btn {
+            width: 40px; height: 40px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .toggle-btn:hover { background: rgba(99, 102, 241, 0.2); transform: scale(1.05); }
+        .page-title { font-size: 18px; font-weight: 600; }
+        .page-title span { color: var(--accent); margin-left: 8px; font-size: 13px; font-weight: 400; }
+        
+        .topbar-right { display: flex; align-items: center; gap: 14px; }
+        .search-box { position: relative; width: 280px; }
+        .search-box input {
+            width: 100%;
+            padding: 10px 14px 10px 40px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .search-box i {
+            position: absolute;
+            left: 14px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        .user-avatar {
+            width: 40px; height: 40px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .user-avatar:hover { transform: scale(1.1); }
+        
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+        .content-area::-webkit-scrollbar { width: 6px; }
+        .content-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        
+        .page-section { display: none; animation: fadeInUp 0.4s ease; }
+        .page-section.active { display: block; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 22px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: var(--shadow-glow);
+            transform: translateY(-2px);
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card-title i { color: var(--primary); }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4); }
+        .btn-primary:active { transform: translateY(0); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-secondary {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        .btn-secondary:hover { background: rgba(99, 102, 241, 0.2); border-color: rgba(99, 102, 241, 0.3); }
+        .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
+        .btn-success { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .btn-success:hover { background: rgba(16, 185, 129, 0.25); }
+        .btn-sm { padding: 7px 14px; font-size: 12px; }
+        .btn-lg { padding: 14px 28px; font-size: 15px; }
+        
+        .upload-area {
+            border: 2px dashed rgba(99, 102, 241, 0.3);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--gradient-card);
+        }
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+            transform: translateY(-2px);
+        }
+        .upload-area.dragover {
+            border-color: var(--accent);
+            background: rgba(6, 182, 212, 0.05);
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.2);
+        }
+        .upload-icon {
+            font-size: 48px;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+        .upload-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+        .upload-desc { font-size: 13px; color: var(--text-secondary); }
+        .upload-formats { margin-top: 12px; font-size: 12px; color: var(--text-secondary); }
+        .upload-formats span { color: var(--accent); }
+        
+        .mode-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.2);
+            padding: 6px;
+            border-radius: 12px;
+        }
+        .mode-tab {
+            flex: 1;
+            padding: 12px 20px;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .mode-tab:hover { color: var(--text-primary); }
+        .mode-tab.active {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+        .mode-tab i { margin-right: 8px; }
+        
+        .canvas-container {
+            position: relative;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #neonCanvas {
+            max-width: 100%;
+            max-height: 60vh;
+            display: block;
+            cursor: crosshair;
+        }
+        
+        .tool-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        .tool-group { margin-bottom: 20px; }
+        .tool-group:last-child { margin-bottom: 0; }
+        .tool-label {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .tool-label span { color: var(--accent); font-size: 12px; }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .slider-container input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(99, 102, 241, 0.2);
+            outline: none;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4);
+            transition: transform 0.2s;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        .slider-value {
+            min-width: 45px;
+            text-align: right;
+            font-size: 13px;
+            color: var(--accent);
+            font-weight: 500;
+        }
+        
+        .color-picker-wrapper {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .color-preset {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+        .color-preset:hover { transform: scale(1.15); }
+        .color-preset.active {
+            border-color: white;
+            box-shadow: 0 0 15px currentColor;
+        }
+        .color-custom {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px dashed var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.25s ease;
+        }
+        .color-custom:hover { border-color: var(--primary); color: var(--primary); }
+        
+        .drawing-tools {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .drawing-tool {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            font-size: 12px;
+        }
+        .drawing-tool:hover { background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); }
+        .drawing-tool.active {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+        }
+        .drawing-tool i { display: block; font-size: 18px; margin-bottom: 4px; }
+        
+        .prompt-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 13px;
+            line-height: 1.6;
+            outline: none;
+            transition: all 0.3s;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .prompt-textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .prompt-textarea::placeholder { color: var(--text-secondary); }
+        
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        .template-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .template-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: var(--shadow-glow);
+        }
+        .template-card.featured::after {
+            content: '推荐';
+            position: absolute;
+            top: 10px; right: -30px;
+            background: var(--gradient-primary);
+            color: white;
+            padding: 3px 35px;
+            font-size: 11px;
+            transform: rotate(45deg);
+        }
+        .template-color-preview {
+            width: 100%;
+            height: 60px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        .template-color-preview::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60%; height: 50%;
+            border: 3px solid;
+            border-radius: 50%;
+            filter: blur(8px);
+            opacity: 0.8;
+        }
+        .template-name { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+        .template-category {
+            display: inline-block;
+            padding: 3px 10px;
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--accent);
+            border-radius: 20px;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+        .template-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .template-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .template-actions .btn { flex: 1; justify-content: center; }
+        
+        .records-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .record-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .record-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: var(--shadow-glow);
+        }
+        .record-image {
+            width: 100%;
+            height: 200px;
+            background: rgba(0,0,0,0.3);
+            object-fit: cover;
+            display: block;
+        }
+        .record-info { padding: 14px; }
+        .record-mode {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .record-mode.manual { background: rgba(6, 182, 212, 0.15); color: var(--accent); }
+        .record-mode.ai { background: rgba(139, 92, 246, 0.15); color: var(--secondary); }
+        .record-target { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+        .record-time { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+        .record-actions { display: flex; gap: 8px; }
+        .record-actions .btn { flex: 1; justify-content: center; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+        .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: var(--text-primary); }
+        .empty-state p { font-size: 13px; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: var(--shadow-glow);
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 80px; height: 80px;
+            background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(30%, -30%);
+        }
+        .stat-icon {
+            width: 44px; height: 44px;
+            background: var(--gradient-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            margin-bottom: 12px;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+        }
+        .stat-label { font-size: 12px; color: var(--text-secondary); }
+        
+        .app-info-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+        }
+        .app-logo {
+            width: 80px; height: 80px;
+            margin: 0 auto 16px;
+            background: var(--gradient-primary);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+        .app-name { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+        .app-version { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 14px;
+            text-align: left;
+        }
+        .info-item {
+            padding: 14px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        .info-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+        .info-value { font-size: 14px; font-weight: 500; color: var(--accent); }
+        
+        .toast {
+            position: fixed;
+            top: 24px; right: 24px;
+            padding: 14px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.3s ease;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast.success { border-color: rgba(16, 185, 129, 0.3); }
+        .toast.success i { color: var(--success); }
+        .toast.error { border-color: rgba(239, 68, 68, 0.3); }
+        .toast.error i { color: var(--error); }
+        .toast.info { border-color: rgba(6, 182, 212, 0.3); }
+        .toast.info i { color: var(--accent); }
+        
+        .mobile-menu-btn { display: none; }
+        
+        @media (max-width: 1024px) {
+            .sidebar { position: fixed; left: 0; top: 0; height: 100vh; z-index: 100; transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .mobile-menu-btn { display: flex; }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 99;
+            }
+            .sidebar-overlay.show { display: block; }
+        }
+        
+        @media (max-width: 768px) {
+            .topbar { padding: 0 16px; }
+            .page-title { font-size: 16px; }
+            .search-box { display: none; }
+            .content-area { padding: 16px; }
+            .card { padding: 16px; }
+            .upload-area { padding: 30px 20px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .stat-card { padding: 16px; }
+            .stat-value { font-size: 24px; }
+            .template-grid { grid-template-columns: 1fr; }
+            .records-grid { grid-template-columns: 1fr; }
+            .mode-tabs { flex-direction: column; }
+            .drawing-tools { justify-content: flex-start; }
+            .drawing-tool { flex: none; width: calc(50% - 4px); }
+        }
+        
+        @media (max-width: 480px) {
+            .topbar { height: 56px; }
+            .toggle-btn { width: 36px; height: 36px; }
+            .user-avatar { width: 36px; height: 36px; font-size: 13px; }
+            .content-area { padding: 12px; }
+            .card { padding: 14px; border-radius: 12px; }
+            .card-title { font-size: 14px; }
+            .btn { padding: 8px 16px; font-size: 12px; }
+            .btn-lg { padding: 12px 20px; font-size: 14px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .upload-area { padding: 24px 16px; }
+            .upload-icon { font-size: 36px; }
+            .upload-title { font-size: 16px; }
+            .drawing-tool { min-width: 70px; padding: 8px; }
+            .drawing-tool i { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+        
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo"><i class="fas fa-bolt"></i> <span>霓虹工坊</span></div>
+                <div class="logo-subtitle">NEON STUDIO v1.0</div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-item active" data-page="manual" onclick="switchPage('manual')">
+                    <div class="nav-icon"><i class="fas fa-paint-brush"></i></div>
+                    <div class="nav-text">手动绘制</div>
+                </div>
+                <div class="nav-item" data-page="ai" onclick="switchPage('ai')">
+                    <div class="nav-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+                    <div class="nav-text">AI智能生成</div>
+                </div>
+                <div class="nav-item" data-page="templates" onclick="switchPage('templates')">
+                    <div class="nav-icon"><i class="fas fa-layer-group"></i></div>
+                    <div class="nav-text">模板库</div>
+                </div>
+                <div class="nav-item" data-page="history" onclick="switchPage('history')">
+                    <div class="nav-icon"><i class="fas fa-clock-rotate-left"></i></div>
+                    <div class="nav-text">历史记录</div>
+                </div>
+                <div class="nav-item" data-page="about" onclick="switchPage('about')">
+                    <div class="nav-icon"><i class="fas fa-circle-info"></i></div>
+                    <div class="nav-text">关于程序</div>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="footer-info">
+                    <p><i class="fas fa-user"></i> <span>作者：军哥懂保</span></p>
+                    <p><i class="fab fa-weixin"></i> <span>xunijiayuan</span></p>
+                    <p><i class="fas fa-phone"></i> <span>18180309010</span></p>
+                </div>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="toggle-btn mobile-menu-btn" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="page-title">霓虹边框凸显工具 <span>让画面更有层次感</span></div>
+                </div>
+                <div class="topbar-right">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="搜索记录、模板..." id="searchInput">
+                    </div>
+                    <div class="user-avatar">军</div>
+                </div>
+            </header>
+            
+            <div class="content-area">
+                <section class="page-section active" id="page-manual">
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-upload"></i> 上传图片</div>
+                        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                            <div class="upload-icon"><i class="fas fa-cloud-arrow-up"></i></div>
+                            <div class="upload-title">点击或拖拽上传图片</div>
+                            <div class="upload-desc">支持 JPG、PNG、WEBP 格式，最大 10MB</div>
+                            <div class="upload-formats">推荐格式：<span>PNG高清</span></div>
+                        </div>
+                        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFileUpload(event)">
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 320px; gap: 20px;" id="workArea" style="display:none;">
+                        <div class="card" style="margin-bottom: 0;">
+                            <div class="card-title">
+                                <i class="fas fa-image"></i> 图片预览
+                                <div style="margin-left: auto; display: flex; gap: 8px;">
+                                    <button class="btn btn-secondary btn-sm" onclick="resetCanvas()"><i class="fas fa-rotate-left"></i> 重置</button>
+                                    <button class="btn btn-primary btn-sm" onclick="saveCanvasImage()"><i class="fas fa-download"></i> 保存</button>
+                                </div>
+                            </div>
+                            <div class="canvas-container">
+                                <canvas id="neonCanvas"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="tool-panel">
+                            <div class="tool-group">
+                                <div class="tool-label">绘制工具</div>
+                                <div class="drawing-tools">
+                                    <div class="drawing-tool active" data-tool="freehand" onclick="setTool('freehand')">
+                                        <i class="fas fa-pen"></i>
+                                        自由绘制
+                                    </div>
+                                    <div class="drawing-tool" data-tool="rect" onclick="setTool('rect')">
+                                        <i class="far fa-square"></i>
+                                        矩形框选
+                                    </div>
+                                    <div class="drawing-tool" data-tool="ellipse" onclick="setTool('ellipse')">
+                                        <i class="far fa-circle"></i>
+                                        椭圆框选
+                                    </div>
+                                    <div class="drawing-tool" data-tool="eraser" onclick="setTool('eraser')">
+                                        <i class="fas fa-eraser"></i>
+                                        橡皮擦
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="tool-group">
+                                <div class="tool-label">霓虹颜色</div>
+                                <div class="color-picker-wrapper">
+                                    <div class="color-preset active" style="background: #00ffff; color: #00ffff;" data-color="#00ffff" onclick="setNeonColor('#00ffff')"></div>
+                                    <div class="color-preset" style="background: #ff00ff; color: #ff00ff;" data-color="#ff00ff" onclick="setNeonColor('#ff00ff')"></div>
+                                    <div class="color-preset" style="background: #00ff88; color: #00ff88;" data-color="#00ff88" onclick="setNeonColor('#00ff88')"></div>
+                                    <div class="color-preset" style="background: #ff6600; color: #ff6600;" data-color="#ff6600" onclick="setNeonColor('#ff6600')"></div>
+                                    <div class="color-preset" style="background: #ff0066; color: #ff0066;" data-color="#ff0066" onclick="setNeonColor('#ff0066')"></div>
+                                    <div class="color-preset" style="background: #ffffff; color: #ffffff;" data-color="#ffffff" onclick="setNeonColor('#ffffff')"></div>
+                                    <label class="color-custom" style="cursor: pointer;">
+                                        <i class="fas fa-plus"></i>
+                                        <input type="color" id="customColor" style="display:none" onchange="setNeonColor(this.value)">
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="tool-group">
+                                <div class="tool-label">边框粗细 <span id="thicknessValue">4px</span></div>
+                                <div class="slider-container">
+                                    <input type="range" id="thicknessSlider" min="1" max="20" value="4" oninput="updateThickness(this.value)">
+                                </div>
+                            </div>
+                            
+                            <div class="tool-group">
+                                <div class="tool-label">光晕强度 <span id="glowValue">20</span></div>
+                                <div class="slider-container">
+                                    <input type="range" id="glowSlider" min="0" max="50" value="20" oninput="updateGlow(this.value)">
+                                </div>
+                            </div>
+                            
+                            <div class="tool-group">
+                                <div class="tool-label">背景压暗 <span id="darkenValue">0%</span></div>
+                                <div class="slider-container">
+                                    <input type="range" id="darkenSlider" min="0" max="70" value="0" oninput="updateDarken(this.value)">
+                                </div>
+                            </div>
+                            
+                            <div class="tool-group">
+                                <div class="tool-label">目标描述（可选）</div>
+                                <input type="text" id="targetDesc" placeholder="例：人物背部、桌上手机..." style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:13px;outline:none;transition:all 0.3s;font-family:inherit;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <section class="page-section" id="page-ai">
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-wand-magic-sparkles"></i> AI智能霓虹生成
+                            <span style="margin-left: auto; font-size: 12px; color: var(--accent); background: rgba(6,182,212,0.1); padding: 4px 12px; border-radius: 20px;">
+                                <i class="fas fa-bolt"></i> 豆包Seedream模型
+                            </span>
+                        </div>
+                        
+                        <div class="upload-area" id="aiUploadArea" onclick="document.getElementById('aiFileInput').click()">
+                            <div class="upload-icon"><i class="fas fa-cloud-arrow-up"></i></div>
+                            <div class="upload-title">点击上传原图</div>
+                            <div class="upload-desc">AI会根据你的描述自动添加霓虹效果</div>
+                            <div class="upload-formats">模型：<span>doubao-seedream-4.0</span> | 支持图生图</div>
+                        </div>
+                        <input type="file" id="aiFileInput" accept="image/*" style="display:none" onchange="handleAIFileUpload(event)">
+                        
+                        <div id="aiPreviewArea" style="display:none; margin-top: 20px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;" id="aiCompareArea">
+                                <div>
+                                    <div style="text-align: center; font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;"><i class="far fa-image"></i> 原图</div>
+                                    <img id="aiPreviewImg" style="width: 100%; max-height: 300px; object-fit: contain; border-radius: 10px; background: rgba(0,0,0,0.2);">
+                                </div>
+                                <div>
+                                    <div style="text-align: center; font-size: 13px; color: var(--accent); margin-bottom: 8px;"><i class="fas fa-wand-magic-sparkles"></i> AI生成</div>
+                                    <div id="aiResultContainer" style="width: 100%; height: 300px; border-radius: 10px; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;">
+                                        <div style="text-align: center; color: var(--text-secondary);">
+                                            <i class="fas fa-magic" style="font-size: 32px; margin-bottom: 8px; opacity: 0.5;"></i>
+                                            <div style="font-size: 13px;">点击下方按钮生成</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="aiLoadingArea" style="display:none; margin-top: 20px; text-align: center; padding: 40px 20px;">
+                            <div class="ai-spinner" style="width: 60px; height: 60px; border: 3px solid rgba(99,102,241,0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+                            <div style="font-size: 15px; font-weight: 500; margin-bottom: 8px;">AI正在创作中...</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">大约需要 10-30 秒，请耐心等待 ✨</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-list-check"></i> 效果配置</div>
+                        
+                        <div class="tool-group">
+                            <div class="tool-label">突出目标</div>
+                            <input type="text" id="aiTarget" placeholder="例：图中人物整个背部、画面中的椅子..." style="width:100%;padding:12px 16px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:14px;outline:none;transition:all 0.3s;font-family:inherit;">
+                        </div>
+                        
+                        <div class="tool-group">
+                            <div class="tool-label">霓虹颜色</div>
+                            <div class="color-picker-wrapper">
+                                <div class="color-preset active" style="background: #00ffff; color: #00ffff;" data-color="#00ffff" onclick="setAINeonColor('#00ffff')"></div>
+                                <div class="color-preset" style="background: #ff00ff; color: #ff00ff;" data-color="#ff00ff" onclick="setAINeonColor('#ff00ff')"></div>
+                                <div class="color-preset" style="background: #00ff88; color: #00ff88;" data-color="#00ff88" onclick="setAINeonColor('#00ff88')"></div>
+                                <div class="color-preset" style="background: #ff6600; color: #ff6600;" data-color="#ff6600" onclick="setAINeonColor('#ff6600')"></div>
+                                <div class="color-preset" style="background: #ff0066; color: #ff0066;" data-color="#ff0066" onclick="setAINeonColor('#ff0066')"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="tool-group">
+                            <div class="tool-label">正向提示词 <button class="btn btn-sm btn-secondary" style="padding:4px 10px;font-size:11px;" onclick="generatePrompt()"><i class="fas fa-wand-magic-sparkles"></i> 智能生成</button></div>
+                            <textarea class="prompt-textarea" id="aiPrompt" placeholder="描述你想要的霓虹效果..."></textarea>
+                        </div>
+                        
+                        <div class="tool-group">
+                            <div class="tool-label">反向提示词</div>
+                            <textarea class="prompt-textarea" id="aiNegativePrompt" placeholder="描述你不想出现的效果..."></textarea>
+                        </div>
+                        
+                        <div style="background: rgba(6,182,212,0.08); border: 1px solid rgba(6,182,212,0.2); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+                            <div style="font-size: 12px; color: var(--accent); margin-bottom: 6px;"><i class="fas fa-lightbulb"></i> 温馨提示</div>
+                            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                                AI图生图需要先配置 <strong>TOS对象存储</strong> 用于上传图片。如未配置，推荐使用「手动绘制」模式，效果实时可见更可控！
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary btn-lg" id="aiGenerateBtn" style="width: 100%; justify-content: center;" onclick="processAIImage()">
+                            <i class="fas fa-wand-magic-sparkles"></i> 开始AI生成
+                        </button>
+                    </div>
+                </section>
+                
+                <section class="page-section" id="page-templates">
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-layer-group"></i> 霓虹效果模板库
+                            <div style="margin-left: auto;">
+                                <button class="btn btn-secondary btn-sm" onclick="loadTemplates()"><i class="fas fa-rotate"></i> 刷新</button>
+                            </div>
+                        </div>
+                        
+                        <div class="template-grid" id="templateGrid">
+                        </div>
+                    </div>
+                </section>
+                
+                <section class="page-section" id="page-history">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-images"></i></div>
+                            <div class="stat-value" id="totalCount">0</div>
+                            <div class="stat-label">总处理数</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-paint-brush"></i></div>
+                            <div class="stat-value" id="manualCount">0</div>
+                            <div class="stat-label">手动绘制</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+                            <div class="stat-value" id="aiCount">0</div>
+                            <div class="stat-label">AI生成</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-folder"></i></div>
+                            <div class="stat-value" id="templateCount">0</div>
+                            <div class="stat-label">模板数量</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-clock-rotate-left"></i> 处理历史
+                            <div style="margin-left: auto; display: flex; gap: 8px;">
+                                <select id="filterMode" onchange="loadRecords()" style="padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:12px;outline:none;cursor:pointer;">
+                                    <option value="">全部模式</option>
+                                    <option value="manual">手动绘制</option>
+                                    <option value="ai">AI生成</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="records-grid" id="recordsGrid">
+                        </div>
+                    </div>
+                </section>
+                
+                <section class="page-section" id="page-about">
+                    <div class="app-info-card">
+                        <div class="app-logo"><i class="fas fa-bolt"></i></div>
+                        <div class="app-name">霓虹边框凸显工具</div>
+                        <div class="app-version">版本 1.0.0 | 2027科技风设计</div>
+                        
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">程序大小</div>
+                                <div class="info-value" id="appSize">计算中...</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">最后修改</div>
+                                <div class="info-value" id="lastModified">--</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">作者</div>
+                                <div class="info-value">军哥懂保</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">微信号</div>
+                                <div class="info-value">xunijiayuan</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">联系电话</div>
+                                <div class="info-value">18180309010</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">支持平台</div>
+                                <div class="info-value">网页/手机/PC</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 24px; text-align: left;">
+                            <h3 style="font-size: 15px; margin-bottom: 12px;"><i class="fas fa-star" style="color: var(--warning); margin-right: 8px;"></i>功能特点</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: var(--text-secondary);">
+                                <div><i class="fas fa-check" style="color: var(--success); margin-right: 6px;"></i>手动自由绘制霓虹边框</div>
+                                <div><i class="fas fa-check" style="color: var(--success); margin-right: 6px;"></i>AI智能生成特效</div>
+                                <div><i class="fas fa-check" style="color: var(--success); margin-right: 6px;"></i>5套精美预设模板</div>
+                                <div><i class="fas fa-check" style="color: var(--success); margin-right: 6px;"></i>自定义颜色/粗细/光晕</div>
+                                <div><i class="fas fa-check" style="color: var(--success); margin-right: 6px;"></i>历史记录管理</div>
+                                <div><i class="fas fa-check" style="color: var(--success); margin-right: 6px;"></i>三端自适应响应式</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        let currentPage = 'manual';
+        let currentTool = 'freehand';
+        let neonColor = '#00ffff';
+        let neonThickness = 4;
+        let glowIntensity = 20;
+        let backgroundDarken = 0;
+        let aiNeonColor = '#00ffff';
+        let uploadedFilename = '';
+        let aiUploadedFilename = '';
+        
+        let canvas, ctx;
+        let isDrawing = false;
+        let lastX = 0, lastY = 0;
+        let startX = 0, startY = 0;
+        let imageLoaded = false;
+        let originalImage = null;
+        let shapes = [];
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        }
+        
+        function switchPage(page) {
+            currentPage = page;
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.page === page);
+            });
+            document.querySelectorAll('.page-section').forEach(section => {
+                section.classList.toggle('active', section.id === 'page-' + page);
+            });
+            
+            if (window.innerWidth <= 1024) {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('show');
+            }
+            
+            if (page === 'history') loadRecords();
+            if (page === 'templates') loadTemplates();
+            if (page === 'about') loadAppInfo();
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
+            toast.innerHTML = `<i class="fas ${icons[type] || 'fa-circle-info'}"></i><span>${message}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+        
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast('请上传图片文件', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            fetch('/api/neon/upload', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        showToast(data.error, 'error');
+                        return;
+                    }
+                    uploadedFilename = data.filename;
+                    loadImageToCanvas(data.url);
+                    document.getElementById('workArea').style.display = 'grid';
+                    showToast('图片上传成功', 'success');
+                })
+                .catch(err => {
+                    showToast('上传失败: ' + err.message, 'error');
+                });
+        }
+        
+        function loadImageToCanvas(src) {
+            const img = new Image();
+            img.onload = function() {
+                canvas = document.getElementById('neonCanvas');
+                ctx = canvas.getContext('2d');
+                
+                const maxWidth = Math.min(800, window.innerWidth - 400);
+                const maxHeight = 600;
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > maxWidth) {
+                    height = height * (maxWidth / width);
+                    width = maxWidth;
+                }
+                if (height > maxHeight) {
+                    width = width * (maxHeight / height);
+                    height = maxHeight;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                originalImage = img;
+                imageLoaded = true;
+                shapes = [];
+                
+                redrawCanvas();
+                setupCanvasEvents();
+            };
+            img.src = src;
+        }
+        
+        function redrawCanvas() {
+            if (!ctx || !originalImage) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+            
+            if (backgroundDarken > 0) {
+                ctx.fillStyle = `rgba(0, 0, 0, ${backgroundDarken / 100})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            shapes.forEach(shape => drawShape(shape));
+        }
+        
+        function drawShape(shape) {
+            ctx.save();
+            ctx.strokeStyle = shape.color;
+            ctx.lineWidth = shape.thickness;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            if (shape.glow > 0) {
+                ctx.shadowColor = shape.color;
+                ctx.shadowBlur = shape.glow;
+            }
+            
+            if (shape.type === 'freehand' || shape.type === 'eraser') {
+                if (shape.points && shape.points.length > 1) {
+                    ctx.globalCompositeOperation = shape.type === 'eraser' ? 'destination-out' : 'source-over';
+                    ctx.beginPath();
+                    ctx.moveTo(shape.points[0].x, shape.points[0].y);
+                    for (let i = 1; i < shape.points.length; i++) {
+                        ctx.lineTo(shape.points[i].x, shape.points[i].y);
+                    }
+                    ctx.stroke();
+                }
+            } else if (shape.type === 'rect') {
+                ctx.strokeRect(shape.x, shape.y, shape.w, shape.h);
+            } else if (shape.type === 'ellipse') {
+                ctx.beginPath();
+                ctx.ellipse(shape.x + shape.w/2, shape.y + shape.h/2, Math.abs(shape.w/2), Math.abs(shape.h/2), 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+        }
+        
+        function setupCanvasEvents() {
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseleave', stopDrawing);
+            
+            canvas.addEventListener('touchstart', handleTouchStart);
+            canvas.addEventListener('touchmove', handleTouchMove);
+            canvas.addEventListener('touchend', stopDrawing);
+        }
+        
+        function getCanvasPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+        
+        function startDrawing(e) {
+            if (!imageLoaded) return;
+            isDrawing = true;
+            const pos = getCanvasPos(e);
+            lastX = pos.x;
+            lastY = pos.y;
+            startX = pos.x;
+            startY = pos.y;
+            
+            if (currentTool === 'freehand' || currentTool === 'eraser') {
+                shapes.push({
+                    type: currentTool,
+                    color: neonColor,
+                    thickness: currentTool === 'eraser' ? neonThickness * 3 : neonThickness,
+                    glow: currentTool === 'eraser' ? 0 : glowIntensity,
+                    points: [{ x: pos.x, y: pos.y }]
+                });
+            }
+        }
+        
+        function draw(e) {
+            if (!isDrawing || !imageLoaded) return;
+            const pos = getCanvasPos(e);
+            
+            if (currentTool === 'freehand' || currentTool === 'eraser') {
+                const currentShape = shapes[shapes.length - 1];
+                currentShape.points.push({ x: pos.x, y: pos.y });
+                redrawCanvas();
+            } else if (currentTool === 'rect' || currentTool === 'ellipse') {
+                redrawCanvas();
+                ctx.save();
+                ctx.strokeStyle = neonColor;
+                ctx.lineWidth = neonThickness;
+                ctx.shadowColor = neonColor;
+                ctx.shadowBlur = glowIntensity;
+                ctx.setLineDash([5, 5]);
+                
+                const w = pos.x - startX;
+                const h = pos.y - startY;
+                
+                if (currentTool === 'rect') {
+                    ctx.strokeRect(startX, startY, w, h);
+                } else {
+                    ctx.beginPath();
+                    ctx.ellipse(startX + w/2, startY + h/2, Math.abs(w/2), Math.abs(h/2), 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+        
+        function stopDrawing(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+            
+            if ((currentTool === 'rect' || currentTool === 'ellipse') && e) {
+                const pos = getCanvasPos(e);
+                const w = pos.x - startX;
+                const h = pos.y - startY;
+                if (Math.abs(w) > 5 && Math.abs(h) > 5) {
+                    shapes.push({
+                        type: currentTool,
+                        color: neonColor,
+                        thickness: neonThickness,
+                        glow: glowIntensity,
+                        x: w > 0 ? startX : pos.x,
+                        y: h > 0 ? startY : pos.y,
+                        w: Math.abs(w),
+                        h: Math.abs(h)
+                    });
+                    redrawCanvas();
+                }
+            }
+        }
+        
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            startDrawing({ clientX: touch.clientX, clientY: touch.clientY });
+        }
+        
+        function handleTouchMove(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            draw({ clientX: touch.clientX, clientY: touch.clientY });
+        }
+        
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.drawing-tool').forEach(t => {
+                t.classList.toggle('active', t.dataset.tool === tool);
+            });
+            showToast(`已切换到${tool === 'freehand' ? '自由绘制' : tool === 'rect' ? '矩形框选' : tool === 'ellipse' ? '椭圆框选' : '橡皮擦'}工具`);
+        }
+        
+        function setNeonColor(color) {
+            neonColor = color;
+            document.querySelectorAll('.color-preset').forEach(p => {
+                p.classList.toggle('active', p.dataset.color === color);
+            });
+            if (imageLoaded) redrawCanvas();
+        }
+        
+        function updateThickness(val) {
+            neonThickness = parseInt(val);
+            document.getElementById('thicknessValue').textContent = val + 'px';
+        }
+        
+        function updateGlow(val) {
+            glowIntensity = parseInt(val);
+            document.getElementById('glowValue').textContent = val;
+        }
+        
+        function updateDarken(val) {
+            backgroundDarken = parseInt(val);
+            document.getElementById('darkenValue').textContent = val + '%';
+            if (imageLoaded) redrawCanvas();
+        }
+        
+        function resetCanvas() {
+            shapes = [];
+            backgroundDarken = 0;
+            document.getElementById('darkenSlider').value = 0;
+            document.getElementById('darkenValue').textContent = '0%';
+            if (imageLoaded) redrawCanvas();
+            showToast('画布已重置');
+        }
+        
+        function saveCanvasImage() {
+            if (!imageLoaded) {
+                showToast('请先上传图片', 'error');
+                return;
+            }
+            
+            const imageData = canvas.toDataURL('image/png');
+            const targetDesc = document.getElementById('targetDesc').value;
+            
+            fetch('/api/neon/save_canvas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image_data: imageData,
+                    original_image: uploadedFilename,
+                    target_description: targetDesc,
+                    neon_color: neonColor,
+                    neon_thickness: neonThickness,
+                    glow_intensity: glowIntensity,
+                    background_darken: backgroundDarken
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, 'error');
+                    return;
+                }
+                showToast('图片保存成功！', 'success');
+                
+                const link = document.createElement('a');
+                link.download = 'neon_effect_' + Date.now() + '.png';
+                link.href = imageData;
+                link.click();
+            })
+            .catch(err => {
+                showToast('保存失败: ' + err.message, 'error');
+            });
+        }
+        
+        function handleAIFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            fetch('/api/neon/upload', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        showToast(data.error, 'error');
+                        return;
+                    }
+                    aiUploadedFilename = data.filename;
+                    document.getElementById('aiPreviewImg').src = data.url;
+                    document.getElementById('aiPreviewArea').style.display = 'block';
+                    showToast('图片上传成功', 'success');
+                })
+                .catch(err => {
+                    showToast('上传失败: ' + err.message, 'error');
+                });
+        }
+        
+        function setAINeonColor(color) {
+            aiNeonColor = color;
+            document.querySelectorAll('#page-ai .color-preset').forEach(p => {
+                p.classList.toggle('active', p.dataset.color === color);
+            });
+        }
+        
+        function generatePrompt() {
+            const target = document.getElementById('aiTarget').value || '目标物体';
+            const colorNames = {
+                '#00ffff': '电光蓝', '#ff00ff': '粉紫色', '#00ff88': '青绿色',
+                '#ff6600': '橙黄色', '#ff0066': '玫红色'
+            };
+            const colorName = colorNames[aiNeonColor] || '自定义颜色';
+            
+            const prompt = `保留原图完整构图、人物样貌、环境光影不变，不对画面物体做任何修改；选中画面${target}区域，添加发光霓虹轮廓边框，霓虹颜色为${colorName}，霓虹边缘自带柔和扩散光晕；压暗整张图片背景，弱化背景色彩亮度，制造前后景深层次，让带霓虹边框的目标成为画面视觉重点；画质高清原图质感，无扭曲、无变形，仅叠加霓虹发光特效，赛博氛围感，细节清晰`;
+            
+            const negative = '修改人物身材、改变背景、更换服饰、模糊目标、画面色块污染、手绘化、扭曲肢体、裁剪画面、多余特效、文字水印';
+            
+            document.getElementById('aiPrompt').value = prompt;
+            document.getElementById('aiNegativePrompt').value = negative;
+            showToast('提示词已生成');
+        }
+        
+        function processAIImage() {
+            if (!aiUploadedFilename) {
+                showToast('请先上传图片', 'error');
+                return;
+            }
+            
+            const target = document.getElementById('aiTarget').value;
+            if (!target) {
+                showToast('请填写突出目标描述', 'error');
+                return;
+            }
+            
+            const prompt = document.getElementById('aiPrompt').value;
+            const negativePrompt = document.getElementById('aiNegativePrompt').value;
+            const btn = document.getElementById('aiGenerateBtn');
+            const loadingArea = document.getElementById('aiLoadingArea');
+            const resultContainer = document.getElementById('aiResultContainer');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> 生成中...';
+            loadingArea.style.display = 'block';
+            resultContainer.innerHTML = `
+                <div style="text-align: center; color: var(--text-secondary);">
+                    <div style="width: 40px; height: 40px; border: 3px solid rgba(99,102,241,0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px;"></div>
+                    <div style="font-size: 13px;">AI正在创作中...</div>
+                </div>
+            `;
+            
+            fetch('/api/neon/ai_process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    original_image: aiUploadedFilename,
+                    target_description: target,
+                    neon_color: aiNeonColor,
+                    prompt: prompt,
+                    negative_prompt: negativePrompt
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                loadingArea.style.display = 'none';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> 开始AI生成';
+                
+                if (data.status === 'completed') {
+                    resultContainer.innerHTML = `
+                        <img src="${data.output_url}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 10px;">
+                    `;
+                    showToast('AI生成成功！', 'success');
+                    if (typeof loadRecords === 'function') loadRecords();
+                } else if (data.status === 'error') {
+                    resultContainer.innerHTML = `
+                        <div style="text-align: center; color: var(--error); padding: 20px;">
+                            <i class="fas fa-circle-exclamation" style="font-size: 32px; margin-bottom: 8px;"></i>
+                            <div style="font-size: 13px; margin-bottom: 8px;">生成失败</div>
+                            <div style="font-size: 11px; color: var(--text-secondary);">${data.message || '未知错误'}</div>
+                            ${data.tip ? `<div style="font-size: 11px; color: var(--accent); margin-top: 8px;">${data.tip}</div>` : ''}
+                        </div>
+                    `;
+                    showToast(data.message || '生成失败', 'error');
+                } else if (data.status === 'simulation') {
+                    resultContainer.innerHTML = `
+                        <div style="text-align: center; color: var(--warning); padding: 20px;">
+                            <i class="fas fa-triangle-exclamation" style="font-size: 32px; margin-bottom: 8px;"></i>
+                            <div style="font-size: 13px; margin-bottom: 8px;">模拟模式</div>
+                            <div style="font-size: 11px; color: var(--text-secondary);">${data.message || ''}</div>
+                        </div>
+                    `;
+                    showToast(data.message || '模拟模式', 'info');
+                }
+            })
+            .catch(err => {
+                loadingArea.style.display = 'none';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> 开始AI生成';
+                resultContainer.innerHTML = `
+                    <div style="text-align: center; color: var(--error); padding: 20px;">
+                        <i class="fas fa-wifi" style="font-size: 32px; margin-bottom: 8px;"></i>
+                        <div style="font-size: 13px;">网络错误</div>
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">${err.message}</div>
+                    </div>
+                `;
+                showToast('处理失败: ' + err.message, 'error');
+            });
+        }
+        
+        function loadTemplates() {
+            fetch('/api/neon/templates')
+                .then(res => res.json())
+                .then(data => {
+                    const grid = document.getElementById('templateGrid');
+                    if (data.length === 0) {
+                        fetch('/api/neon/default_templates', { method: 'POST' })
+                            .then(() => loadTemplates());
+                        return;
+                    }
+                    
+                    grid.innerHTML = data.map(tpl => `
+                        <div class="template-card ${tpl.is_default ? 'featured' : ''}" onclick="applyTemplate(${tpl.id})">
+                            <div class="template-color-preview" style="background: ${tpl.neon_color}22;">
+                                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60%;height:50%;border:3px solid ${tpl.neon_color};border-radius:50%;filter:blur(8px);opacity:0.8;"></div>
+                            </div>
+                            <div class="template-category">${tpl.category}</div>
+                            <div class="template-name">${tpl.name}</div>
+                            <div class="template-desc">${tpl.prompt.substring(0, 60)}...</div>
+                            <div class="template-actions">
+                                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); applyTemplate(${tpl.id})"><i class="fas fa-play"></i> 使用</button>
+                                ${!tpl.is_default ? `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteTemplate(${tpl.id})"><i class="fas fa-trash"></i></button>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('templateCount').textContent = data.length;
+                });
+        }
+        
+        function applyTemplate(id) {
+            fetch('/api/neon/templates')
+                .then(res => res.json())
+                .then(templates => {
+                    const tpl = templates.find(t => t.id === id);
+                    if (tpl) {
+                        setNeonColor(tpl.neon_color);
+                        document.getElementById('thicknessSlider').value = tpl.neon_thickness;
+                        document.getElementById('thicknessValue').textContent = tpl.neon_thickness + 'px';
+                        neonThickness = tpl.neon_thickness;
+                        
+                        document.getElementById('glowSlider').value = tpl.glow_intensity;
+                        document.getElementById('glowValue').textContent = tpl.glow_intensity;
+                        glowIntensity = tpl.glow_intensity;
+                        
+                        document.getElementById('darkenSlider').value = tpl.background_darken;
+                        document.getElementById('darkenValue').textContent = tpl.background_darken + '%';
+                        backgroundDarken = tpl.background_darken;
+                        
+                        document.getElementById('aiPrompt').value = tpl.prompt;
+                        document.getElementById('aiNegativePrompt').value = tpl.negative_prompt;
+                        
+                        if (imageLoaded) redrawCanvas();
+                        
+                        switchPage('manual');
+                        showToast(`已应用模板：${tpl.name}`, 'success');
+                    }
+                });
+        }
+        
+        function deleteTemplate(id) {
+            if (!confirm('确定要删除这个模板吗？')) return;
+            fetch(`/api/neon/templates/${id}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    showToast(data.message, 'success');
+                    loadTemplates();
+                });
+        }
+        
+        function loadRecords() {
+            const mode = document.getElementById('filterMode').value;
+            let url = '/api/neon/records?page=1&per_page=50';
+            if (mode) url += '&mode=' + mode;
+            
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    const grid = document.getElementById('recordsGrid');
+                    const records = data.records || [];
+                    
+                    if (records.length === 0) {
+                        grid.innerHTML = `
+                            <div class="empty-state" style="grid-column: 1/-1;">
+                                <i class="fas fa-images"></i>
+                                <h3>暂无记录</h3>
+                                <p>快去制作你的第一张霓虹效果图吧！</p>
+                            </div>
+                        `;
+                    } else {
+                        grid.innerHTML = records.map(rec => `
+                            <div class="record-card">
+                                ${rec.output_image ? `<img src="/api/neon/image/output/${rec.output_image}" class="record-image" alt="">` : 
+                                  rec.original_image ? `<img src="/api/neon/image/upload/${rec.original_image}" class="record-image" alt="">` : ''}
+                                <div class="record-info">
+                                    <span class="record-mode ${rec.mode}">${rec.mode === 'manual' ? '手动绘制' : 'AI生成'}</span>
+                                    <div class="record-target">${rec.target_description || '未命名'}</div>
+                                    <div class="record-time"><i class="far fa-clock"></i> ${formatDate(rec.created_at)}</div>
+                                    <div class="record-actions">
+                                        <button class="btn btn-secondary btn-sm" onclick="downloadRecord(${rec.id})"><i class="fas fa-download"></i> 下载</button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteRecord(${rec.id})"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                    
+                    document.getElementById('totalCount').textContent = data.total || 0;
+                    document.getElementById('manualCount').textContent = records.filter(r => r.mode === 'manual').length;
+                    document.getElementById('aiCount').textContent = records.filter(r => r.mode === 'ai').length;
+                });
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return '--';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('zh-CN') + ' ' + d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        function downloadRecord(id) {
+            fetch(`/api/neon/records/${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.output_image) {
+                        window.open('/api/neon/image/output/' + data.output_image, '_blank');
+                    } else {
+                        showToast('该记录无输出图片', 'error');
+                    }
+                });
+        }
+        
+        function deleteRecord(id) {
+            if (!confirm('确定要删除这条记录吗？')) return;
+            fetch(`/api/neon/records/${id}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    showToast(data.message, 'success');
+                    loadRecords();
+                });
+        }
+        
+        function loadAppInfo() {
+            fetch('/api/neon/app_info')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('appSize').textContent = data.app_size || '未知';
+                    document.getElementById('lastModified').textContent = formatDate(data.last_modified);
+                })
+                .catch(() => {
+                    document.getElementById('appSize').textContent = '计算失败';
+                });
+        }
+        
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                document.getElementById('fileInput').files = dataTransfer.files;
+                handleFileUpload({ target: { files: [file] } });
+            }
+        });
+        
+        document.querySelector('.color-custom').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('customColor').click();
+        });
+        
+        window.addEventListener('load', () => {
+            fetch('/api/neon/templates')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        fetch('/api/neon/default_templates', { method: 'POST' });
+                    }
+                });
+        });
+    </script>
+</body>
+</html>
