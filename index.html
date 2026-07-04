@@ -1584,7 +1584,7 @@
             
             const apiKey = getStorage(STORAGE_KEYS.API_KEY, '');
             if (!apiKey) {
-                const key = prompt('请输入豆包 API Key（火山方舟）：\n\n获取方式：https://www.volcengine.com/product/doubao');
+                const key = window.prompt('请输入豆包 API Key（火山方舟）：\n\n获取方式：https://www.volcengine.com/product/doubao');
                 if (key) {
                     setStorage(STORAGE_KEYS.API_KEY, key);
                 } else {
@@ -1705,7 +1705,7 @@
 
         function changeApiKey() {
             const currentKey = getStorage(STORAGE_KEYS.API_KEY, '');
-            const key = prompt('请输入新的豆包 API Key：', currentKey);
+            const key = window.prompt('请输入新的豆包 API Key：', currentKey);
             if (key) {
                 setStorage(STORAGE_KEYS.API_KEY, key);
                 showToast('API Key 已更新', 'success');
