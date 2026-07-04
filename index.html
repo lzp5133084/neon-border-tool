@@ -800,6 +800,67 @@
             .drawing-tool { min-width: 70px; padding: 8px; }
             .drawing-tool i { font-size: 16px; }
         }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-box {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            min-width: 320px;
+            max-width: 90%;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+        
+        .modal-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        
+        .modal-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+        }
+        
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
     </style>
 </head>
 <body>
@@ -1234,6 +1295,46 @@
             }, 2500);
         }
         
+        function showInputModal(title, description, defaultValue = '') {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                overlay.innerHTML = `
+                    <div class="modal-box">
+                        <div class="modal-title">${title}</div>
+                        <div class="modal-desc">${description.replace(/\n/g, '<br>')}</div>
+                        <input type="text" class="modal-input" id="modalInput" value="${defaultValue}">
+                        <div class="modal-actions">
+                            <button class="btn btn-secondary" id="modalCancel">取消</button>
+                            <button class="btn btn-primary" id="modalConfirm">确定</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                
+                const input = overlay.querySelector('#modalInput');
+                const cancelBtn = overlay.querySelector('#modalCancel');
+                const confirmBtn = overlay.querySelector('#modalConfirm');
+                
+                setTimeout(() => input.focus(), 50);
+                
+                function close(value) {
+                    overlay.remove();
+                    resolve(value);
+                }
+                
+                cancelBtn.addEventListener('click', () => close(null));
+                confirmBtn.addEventListener('click', () => close(input.value));
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') close(input.value);
+                    if (e.key === 'Escape') close(null);
+                });
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) close(null);
+                });
+            });
+        }
+        
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1570,7 +1671,7 @@
             showToast('提示词已生成');
         }
         
-        function processAIImage() {
+        async function processAIImage() {
             if (!aiUploadedFilename) {
                 showToast('请先上传图片', 'error');
                 return;
@@ -1582,11 +1683,16 @@
                 return;
             }
             
-            const apiKey = getStorage(STORAGE_KEYS.API_KEY, '');
+            let apiKey = getStorage(STORAGE_KEYS.API_KEY, '');
             if (!apiKey) {
-                const key = window.prompt('请输入豆包 API Key（火山方舟）：\n\n获取方式：https://www.volcengine.com/product/doubao');
+                const key = await showInputModal(
+                    '配置豆包 API Key',
+                    '请输入豆包 API Key（火山方舟）：\n\n获取方式：https://www.volcengine.com/product/doubao',
+                    ''
+                );
                 if (key) {
                     setStorage(STORAGE_KEYS.API_KEY, key);
+                    apiKey = key;
                 } else {
                     showToast('需要配置 API Key 才能使用 AI 功能', 'error');
                     return;
@@ -1703,9 +1809,13 @@
             });
         }
 
-        function changeApiKey() {
+        async function changeApiKey() {
             const currentKey = getStorage(STORAGE_KEYS.API_KEY, '');
-            const key = window.prompt('请输入新的豆包 API Key：', currentKey);
+            const key = await showInputModal(
+                '修改 API Key',
+                '请输入新的豆包 API Key：',
+                currentKey
+            );
             if (key) {
                 setStorage(STORAGE_KEYS.API_KEY, key);
                 showToast('API Key 已更新', 'success');
